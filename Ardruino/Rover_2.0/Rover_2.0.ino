@@ -37,45 +37,75 @@
 #define br 11
 
 Servo ser_tr, ser_br, ser_bl, ser_tl; //tr = top right, br = back right, bl = back left, tl = top left, 
-int speed_motor = 0;          //control the speed_motor of the motors
-int direction_motor = 2;      //direction_motor = 1 go straight, 0 go backwards, -1 tank rotation
-int control_signal = 0; 
+int ang_right, ang_left;    //right and left angle of servo
+int speed_motor;            //control the speed_motor of the motors
+int speed_mid_motor;        //speed of middle motors when steering
+int direction_motor;        //direction_motor = 1 go straight, 0 go backwards, -1 tank rotation to the right, -2 tank rotation to the left
+int control_signal;         //input signal to control the rover
 
-//control the speed_motor of the motor
-void speed_motor_up(int m1, int m2, int m3, int m4, int m5, int m6){
-    analogWrite(m1, speed_motor);     //write speed_motor to a motor
-    analogWrite(m2, speed_motor);
-    analogWrite(m3, speed_motor);  
-    analogWrite(m4, speed_motor);
-    analogWrite(m5, speed_motor);  
-    analogWrite(m6, speed_motor);
-    delay(200);     //wait half a second 
-    if (speed_motor < 25)     //if the speed_motor > 25, maintain the speed_motor
+//control the speed of the motor
+void speed_motor_up(){
+    //write speed to a motor
+    //head
+    analogWrite(EnA_1, speed_motor);     
+    analogWrite(EnB_1, speed_motor);
+    //mid
+    analogWrite(EnA_2, speed_mid_motor);  
+    analogWrite(EnB_2, speed_mid_motor);
+    //rear
+    analogWrite(EnA_3, speed_motor);  
+    analogWrite(EnB_3, speed_motor);
+    delay(200);     //wait 
+    if (control_signal == 8 || control_signal == 4 || control_signal == 1 || control_signal == 2)
+    //if motor in straight position then all the speed equal
     {
-        ++speed_motor;
+        if (speed_motor < 125)     //max speed at 125
+        {
+            ++speed_motor;
+        }
+    }
+    else
+    {
+        if (speed_motor < 125)     //max speed at 125
+        {
+            ++speed_motor;
+        }
+        if (speed_mid_motor < 100)  //max speed at 100
+        {
+            ++speed_mid_motor;
+        }
     }
 }
 
-//indicate the direction_motor of move_roverment
-void move_rover(int control_signal){
-    if (direction_motor != 1 && (control_signal == 8 || control_signal == 9 || control_signal == 10))     //not straight then set it to straight
+//control movement
+void move_rover(){
+    if (direction_motor != 1 && (control_signal == 8 || control_signal == 9 || control_signal == 10))
+    //not straight then set it to straight when received signal to go straight
     {
         speed_motor = 0;
         change_direction(1);
     }
-    else if (direction_motor != 0 && (control_signal == 4 || control_signal == 5 || control_signal ==6))  
+    else if (direction_motor != 0 && (control_signal == 4 || control_signal == 5 || control_signal == 6))
+    //not backward then set it to backward when received signal to go backward
     {
         speed_motor = 0;
         change_direction(0);
     }
-    else if (direction_motor != -1 && (control_signal == 1 || control_signal == 2))
+    else if (direction_motor != -1 && control_signal == 1)
+    //not in rotation mode the set it to rotation
     {
         speed_motor = 0;
-        change_direction(-control_signal);
+        change_direction(-1);
     }
-    speed_motor_up(EnA_1, EnB_1, EnA_2, EnB_2, EnA_3, EnB_3);
+    else if (direction_motor != -2 && control_signal == 2)
+    { 
+        speed_motor = 0;
+        change_direction(-2);
+    }
+    speed_motor_up();
 }
 
+//change the direction of the motor 
 void change_direction(int direct) {
     direction_motor = direct;
     switch (direction_motor) {
@@ -132,12 +162,42 @@ void motor(int hi, int lo){
 }
 
 //function to control the angle of the servo
-void steer(int ang_right, int ang_left){
-    //ang_x = angle of each servo
+void steer(int left, int right){
+    //right, left: threshold to adjust the angle of servo
     ser_tr.write(ang_right);
     ser_br.write(ang_right);
     ser_bl.write(ang_left);
     ser_tl.write(ang_left);
+    delay(200);
+    if ((control_signal == 9 && ang_left >= ang_right) || (control_signal == 10 && ang_right >= ang_left) 
+        || (control_signal == 5 && ang_left >= ang_right) || (control_signal == 6 && ang_right >= ang_left))
+    {
+        for(;;)
+        {
+            if (ang_left > 0)
+            {
+                --ang_left;
+            }
+            if (ang_right > 0)
+            {
+                --ang_right;
+            }
+            delay(200);
+            if (ang_left == 0 && ang_right == 0)
+            {
+                break;
+            }
+        }
+    }
+    //if > threshold, stop changing the angle
+    if (ang_right < right)      
+    {
+        ++ang_right;
+    }
+    if (ang_left < left)
+    {
+        ++ang_left;
+    }
 }
 
 void setup()
@@ -166,7 +226,7 @@ void setup()
     pinMode(D_3, OUTPUT);
     pinMode(EnA_3, OUTPUT);
     pinMode(EnB_3, OUTPUT);
-    //initialize pin motors to 0 => no move_roverments
+    //initialize pin motors to 0 => no movements
     //head
     digitalWrite(A_1, 0);
     digitalWrite(B_1, 0);
@@ -194,76 +254,68 @@ void setup()
     ser_bl.attach(bl);   //back left servo
     ser_tl.attach(tl);   //top left servo
     //initialize angles of the servos at 0 degree
-    steer(0, 0);
+    ang_left = 0;
+    ang_right = 0
+    ser_tr.write(ang_right);
+    ser_br.write(ang_right);
+    ser_bl.write(ang_left);
+    ser_tl.write(ang_left);
+    //initialize all speed at 0
     speed_motor = 0; 
-    direction_motor = 2;      //not in a particular direction_motor
-    control_signal = 0;
+    speed_mid_motor = 0;
+    direction_motor = 2;        //not in a particular direction_motor
+    control_signal = 0;         //no input signal 
 }
 
 void loop()
 {
     int data_in = Serial.read();
-    if (data_in != -1 && data_in != control_signal)
+    if (data_in != control_signal)
     control_signal = data_in;
-    Serial.print(control_signal);
-    Serial.print("\n");
+    // Serial.print(control_signal);
+    // Serial.print("\n");
     switch(control_signal){
         case 8:     //go straight
             steer(0, 0);
-           
-            //move_rover();
-            move_rover(control_signal);
-            
+            move_rover();
             break;
         case 9:     //turn right straight 
-            //steer(45, 18);
-            steer(90, 60);
-            
-            //move_rover();
-            move_rover(control_signal);
+            steer(18, 45);
+            move_rover();
             break;
         case 10:    //turn left straight
-            //steer(18, 45);
-            steer(60, 90);
-       
-            //move_rover();
-            move_rover(control_signal);
+            steer(45, 18);
+            move_rover();
             break;
         case 4:     //go backward
             steer(0, 0);
-            
-            //move_rover();
-            move_rover(control_signal);
+            move_rover();
             break;
         case 5:     //turn right backward
-            //steer(45, 18);
-            steer(90, 60);
-            
-            //move_rover();
-            move_rover(control_signal);
+            steer(18, 45);
+            move_rover();
             break;
         case 6:     //turn left backward 
-            //steer(18, 45);
-            steer(60, 90);
-            
-            //move_rover();
-            move_rover(control_signal);
+            steer(45, 18);
+            move_rover();
             break;
         case 1:    //tank rotation right
             steer(0, 0);
-            
-            //move_rover();
-            move_rover(control_signal);
+            move_rover();
             break;
         case 2:     //tank rotation left
             steer(0, 0);
-            
-            
-            //move_rover();
-            move_rover(control_signal);
+            move_rover();
             break;
         default:
             speed_motor = 0;
+            speed_mid_motor = 0;
+            ang_left = 0;
+            ang_right = 0;
+            ser_tr.write(ang_right);
+            ser_br.write(ang_right);
+            ser_bl.write(ang_left);
+            ser_tl.write(ang_left);
             //head
             digitalWrite(A_1, 0);
             digitalWrite(B_1, 0);
@@ -285,7 +337,5 @@ void loop()
             digitalWrite(D_3, 0);
             analogWrite(EnA_3, 0);
             analogWrite(EnB_3, 0);
-            steer(0, 0);
-            delay(200);
     }
 }
