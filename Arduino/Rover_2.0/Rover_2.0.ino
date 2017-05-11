@@ -318,7 +318,7 @@ void loop()
             ser_tl.write(ang_left);
             //head
             digitalWrite(A_1, 0);
-            digitalWrite(B_1, 0);
+            digitalWrite(B_1, 0);           
             digitalWrite(C_1, 0);
             digitalWrite(D_1, 0);
             analogWrite(EnA_1, 0);
