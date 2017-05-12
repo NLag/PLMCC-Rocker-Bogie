@@ -255,7 +255,7 @@ void setup()
     ser_tl.attach(tl);   //top left servo
     //initialize angles of the servos at 0 degree
     ang_left = 0;
-    ang_right = 0
+    ang_right = 0;
     ser_tr.write(ang_right);
     ser_br.write(ang_right);
     ser_bl.write(ang_left);
@@ -270,10 +270,12 @@ void setup()
 void loop()
 {
     int data_in = Serial.read();
-    if (data_in != control_signal)
+    if ((data_in != control_signal) && (data_in !=-1))
     control_signal = data_in;
-    // Serial.print(control_signal);
-    // Serial.print("\n");
+    Serial.print(control_signal);
+    Serial.print("\n");
+    Serial.print(data_in);
+    Serial.print("\n");
     switch(control_signal){
         case 8:     //go straight
             steer(0, 0);
