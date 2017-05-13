@@ -17,3 +17,4 @@ accelerate	KEYWORD2
 decelerate	KEYWORD2
 reset	KEYWORD2
 isMaxSpeed	KEYWORD2
+whatisspeed KEYWORD2

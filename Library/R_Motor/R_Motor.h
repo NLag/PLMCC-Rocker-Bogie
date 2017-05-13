@@ -12,12 +12,13 @@ class R_Motor
     void decelerate();
     void reset();
     bool isMaxSpeed();
+    int whatisspeed();
   private:
     int max_speed;
     int pinA;
     int pinB;
     int Enb;
-    int speed;
+    int speed_motor;
     int acceleration;
     int rotation;
 };

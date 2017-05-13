@@ -51,9 +51,9 @@
 #define InTurnSpeedMIDDLE 0.2812
 #define InTurnSpeedREER 0.466
 
-#define CenterSpeedFRONT 0.42874
+#define CenterSpeedFRONT 0.4926
 #define CenterSpeedMIDDLE 0.3236
-#define CenterSpeedREER 0.4926
+#define CenterSpeedREER 0.42874
 
 //define angle for turning (degree)
 #define DEFAULTANGLE 90 			
@@ -84,10 +84,16 @@ R_Motor motor_br(A_3,B_3,EnA_3);
 
 //setup servo
 Servo ser_tr, ser_br, ser_tl, ser_bl; 
-int max_angle_tr,max_angle_br,max_angle_tl,max_angle_bl;
-int accel_tr,accel_br,accel_tl,accel_bl;
+int max_angle_tr = 45;
+int max_angle_br = 135;
+int max_angle_tl = 135;
+int max_angle_bl = 45;
+int accel_tr = -1;
+int accel_br = 1;
+int accel_tl = 1;
+int accel_bl = -1;
 
-int standstil = 1; 
+int standstill = 1; 
 int steering = 0; 
 int moving = 0;
 int control_signal = 0;
@@ -117,22 +123,24 @@ void speed_motor_up() {
 void servoSteer(Servo ser, int max_angle, int angle_accel)
 {
 	int angle = ser.read();
-	if (angle < max_angle)
+	if (angle != max_angle)
   	{
     	angle += angle_accel;
-    	if (angle > max_angle)	
-    	{
-    		angle = max_angle;
+    	if (angle_accel < 0 && angle < max_angle) {
+        angle = max_angle;
     	}
+      if (angle_accel > 0 && angle > max_angle) {
+        angle = max_angle;
+      }    	
   	}
-  	ser.write(angle);
+  ser.write(angle);
 }
 
 void steer() {
-    servoSteer(ser_tr, 45, accel_tr);
-    servoSteer(ser_br, 135, accel_br);
-    servoSteer(ser_tl, 135, accel_tl);
-    servoSteer(ser_bl, 45, accel_bl);
+    servoSteer(ser_tr, max_angle_tr, accel_tr);
+    servoSteer(ser_br, max_angle_br, accel_br);
+    servoSteer(ser_tl, max_angle_tl, accel_tl);
+    servoSteer(ser_bl, max_angle_bl, accel_bl);
 }
 
 bool steerDone() {
@@ -144,16 +152,16 @@ bool toMaxSpeed() {
 }
 /*-------------------------------------------------*/
 void controlCar(){
-	if (standstil == 1)
+	if (standstill == 1)
 	{
 		speed_motor_down();
-		standstil = 0;
+		standstill = 0;
 		steering = 1;
 	}
 	else {
 		if (steering == 1)
 		{
-			if (steerDone())
+			if (steerDone() == true)
 			{
 				steering = 0;
 				moving = 1;	
@@ -161,9 +169,9 @@ void controlCar(){
      else steer();
 		}
 		else {
-			if (moving = 1)
+			if (moving == 1)
 			{
-				if (toMaxSpeed())
+				if (toMaxSpeed() == true)
 				{
 					moving = 0;
 				}
@@ -188,6 +196,19 @@ void goStraight(){
 	max_angle_br = DEFAULTANGLE;
 }
 
+void goBackward(){
+  motor_tr.setting(1 , MAXSPEED , 1); //setting(rotation, speed, acceleration)
+  motor_mr.setting(1 , MAXSPEED , 1);
+  motor_br.setting(1 , MAXSPEED , 1);
+  motor_tl.setting(-1 , MAXSPEED , 1);
+  motor_ml.setting(-1 , MAXSPEED , 1);
+  motor_bl.setting(-1 , MAXSPEED , 1);
+  max_angle_tl = DEFAULTANGLE;
+  max_angle_tr = DEFAULTANGLE;
+  max_angle_bl = DEFAULTANGLE;
+  max_angle_br = DEFAULTANGLE;
+}
+/*
 void goRightStraight(){
 	motor_tr.setting(-1 , 255*InTurnSpeedFRONT , InTurnSpeedFRONT);
 	motor_mr.setting(-1 , 255*InTurnSpeedMIDDLE , InTurnSpeedMIDDLE);
@@ -215,18 +236,7 @@ void goLeftStraight(){
   max_angle_br = DEFAULTANGLE;
 }
 
-void goBackward(){
-	motor_tr.setting(1 , MAXSPEED , 1); //setting(rotation, speed, acceleration)
-  motor_mr.setting(1 , MAXSPEED , 1);
-  motor_br.setting(1 , MAXSPEED , 1);
-  motor_tl.setting(-1 , MAXSPEED , 1);
-  motor_ml.setting(-1 , MAXSPEED , 1);
-  motor_bl.setting(-1 , MAXSPEED , 1);
-  max_angle_tl = DEFAULTANGLE;
-  max_angle_tr = DEFAULTANGLE;
-  max_angle_bl = DEFAULTANGLE;
-  max_angle_br = DEFAULTANGLE;
-}
+
 void goRightBackward(){
 	motor_tr.setting(1 , 255*InTurnSpeedFRONT , InTurnSpeedFRONT);
 	motor_mr.setting(1 , 255*InTurnSpeedMIDDLE , InTurnSpeedMIDDLE);
@@ -250,30 +260,34 @@ void goLeftBackward(){
   max_angle_tr = DEFAULTANGLE;
   max_angle_bl = DEFAULTANGLE;
   max_angle_br = DEFAULTANGLE;
-}
+} */
 void rotationRight(){
-	motor_tr.setting(1 , 255*CenterSpeedFRONT , CenterSpeedFRONT);
-	motor_mr.setting(1 , 255*CenterSpeedMIDDLE , CenterSpeedMIDDLE);
-	motor_br.setting(1 , 255*CenterSpeedREER, CenterSpeedREER);
-	motor_tl.setting(1 , 255*CenterSpeedFRONT , CenterSpeedFRONT);
-	motor_ml.setting(1 , 255*CenterSpeedMIDDLE , CenterSpeedMIDDLE);
-	motor_bl.setting(1 , 255*CenterSpeedREER , CenterSpeedREER);
-	max_angle_tl = DEFAULTANGLE;
+	motor_tr.setting(-1 , MAXSPEED*1.4 , 1); //setting(rotation, speed, acceleration)
+  motor_mr.setting(-1 , MAXSPEED*0.9 , 1);
+  motor_br.setting(-1 , MAXSPEED , 1);
+  motor_tl.setting(-1 , MAXSPEED , 1);
+  motor_ml.setting(-1 , MAXSPEED , 1);
+  motor_bl.setting(-1 , MAXSPEED*1.1 , 1);
+  max_angle_tl = DEFAULTANGLE;
   max_angle_tr = DEFAULTANGLE;
   max_angle_bl = DEFAULTANGLE;
   max_angle_br = DEFAULTANGLE;
+  max_angle_tr = 45;
+  max_angle_br = 135;
+  max_angle_tl = 135;
+  max_angle_bl = 45;
 }
 void rotationLeft(){
-	motor_tr.setting(-1 , 255*CenterSpeedFRONT , CenterSpeedFRONT);
-	motor_mr.setting(-1 , 255*CenterSpeedMIDDLE , CenterSpeedMIDDLE);
-	motor_br.setting(-1 , 255*CenterSpeedREER, CenterSpeedREER);
-	motor_tl.setting(-1 , 255*CenterSpeedFRONT , CenterSpeedFRONT);
-	motor_ml.setting(-1 , 255*CenterSpeedMIDDLE , CenterSpeedMIDDLE);
-	motor_bl.setting(-1 , 255*CenterSpeedREER , CenterSpeedREER);
-	max_angle_tl = DEFAULTANGLE;
-  max_angle_tr = DEFAULTANGLE;
-  max_angle_bl = DEFAULTANGLE;
-  max_angle_br = DEFAULTANGLE;
+	motor_tr.setting(1 , MAXSPEED*1.4 , 1); //setting(rotation, speed, acceleration)
+  motor_mr.setting(1 , MAXSPEED*0.9 , 1);
+  motor_br.setting(1 , MAXSPEED , 1);
+  motor_tl.setting(1 , MAXSPEED , 1);
+  motor_ml.setting(1 , MAXSPEED , 1);
+  motor_bl.setting(1 , MAXSPEED*1.1 , 1);
+  max_angle_tr = 45;
+  max_angle_br = 135;
+  max_angle_tl = 135;
+  max_angle_bl = 45;
 }
 void stopall(){
 	motor_tr.setting(0 , 0 , 0);
@@ -290,28 +304,29 @@ void stopall(){
 /*-------------------------------------------------*/
 void settingProperties() {
 	switch(control_signal){
-        case 56:     //go straight 8
+        case 8:     //go straight 8
             goStraight();
             break;
-        case 57:     //turn right straight 9
-            goRightStraight();
-            break;
-        case 48:    //turn left straight 10
-            goLeftStraight();
-            break;
-        case 52:     //go backward 4
+        case 4:     //go backward 4
             goBackward();
             break;
-        case 53:     //turn right backward  5
+        /*case 9:     //turn right straight 9
+            goRightStraight();
+            break;
+        case 10:    //turn left straight 10
+            goLeftStraight();
+            break;
+        
+        case 5:     //turn right backward  5
             goRightBackward();
             break;
-        case 54:     //turn left backward 6
+        case 6:     //turn left backward 6
             goLeftBackward();
-            break;
-        case 49:    //tank rotation right 1
+            break;*/
+        case 1:    //tank rotation right 1
             rotationRight();
             break;
-        case 50:     //tank rotation left 2
+        case 2:     //tank rotation left 2
             rotationLeft();
             break;
         default:
@@ -323,21 +338,22 @@ void settingProperties() {
 /*-------------------------RECEIVE SIGNAL-----------------------------*/
 
 void receiveSignal() {
-    data_in = Serial.read();
+    data_in = Serial3.read();
     if (data_in != control_signal && data_in != -1) {
     	control_signal = data_in;
-    	standstil = 1;
+    	standstill = 1;
     }
-    Serial.println(control_signal);
-    //Serial.println(data_in);
+    Serial3.println(control_signal);
+    //Serial1.println(data_in);
 }
 
 /*-----------------------MAIN PART-------------------------------*/
 
 void setup()
 {   
+    standstill = 1;
     //setup pins
-    Serial.begin(9600);
+    Serial3.begin(9600);
     //set up servos 
     ser_tr.attach(tr);   //top right servo
     ser_br.attach(br);   //back right servo
@@ -359,7 +375,7 @@ void setup()
     motor_ml.reset();
     motor_bl.reset();
 
-    control_signal = 0;         //no input signal 
+    control_signal = 0;         //no input signal
 }
 
 void loop()

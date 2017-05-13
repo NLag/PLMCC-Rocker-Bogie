@@ -269,13 +269,14 @@ void setup()
 
 void loop()
 {
-    int data_in = Serial.read();
+    /*int data_in = Serial.read();
     if ((data_in != control_signal) && (data_in !=-1))
     control_signal = data_in;
     Serial.print(control_signal);
     Serial.print("\n");
     Serial.print(data_in);
-    Serial.print("\n");
+    Serial.print("\n");*/
+    control_signal = 8;
     switch(control_signal){
         case 8:     //go straight
             steer(0, 0);
